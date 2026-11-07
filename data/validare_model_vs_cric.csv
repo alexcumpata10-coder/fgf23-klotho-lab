@@ -1,0 +1,4 @@
+scenariu,RFG,fosfat_simulat_mg_dL,fosfat_publicat_mg_dL,eroare_mg_dL,FGF23_C_terminal_simulat,PTH_simulat_pg_mL,sursa
+"Filtrare glomerulară ≈ 50 (CRIC, categoria ≥ 45)",50,3.56,3.5,0.06,159.0,55.0,"[1], [2]"
+"Filtrare glomerulară ≈ 37 (CRIC, categoria 30–44)",37,3.71,3.7,0.01,178.0,59.0,"[1], [2]"
+"Filtrare glomerulară ≈ 22 (CRIC, categoria < 30)",22,4.1,4.1,0.0,226.0,67.0,"[1], [2]"

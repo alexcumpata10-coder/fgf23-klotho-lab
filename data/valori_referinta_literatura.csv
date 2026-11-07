@@ -1,0 +1,22 @@
+grup,parametru,valoare,unitate,test / observații,sursă
+"Boală cronică renală (CRIC, stadiile 2–4)",FGF23 C-terminal — mediana (IQR),145 (96–239),RU/mL,"Immutopics, a doua generație; 72% au ≥ 100 RU/mL","[1, 2]"
+Boală cronică renală (CRIC),Prag „exces FGF23”,≥ 100,RU/mL,definiție folosită în CRIC,[1]
+Boală cronică renală (CRIC),Prag hiperparatiroidism secundar,≥ 65,pg/mL (parathormon),definiție folosită în CRIC,[1]
+Boală cronică renală (CRIC),Prag hiperfosfatemie,"≥ 4,6","mg/dL (≈ 1,49 mmol/L)",definiție folosită în CRIC,[1]
+Populație generală 40–79 ani (NHANES 2007–2016),Klotho solubil seric — mediana,"803,1",pg/mL,ELISA IBL; n = 13.589,[3]
+Boală cronică renală (NHANES 2007–2016),Klotho solubil seric — mediana (IQR),760 (624–958),pg/mL,ELISA IBL,[4]
+Donatori sănătoși (validarea testului NHANES),Klotho solubil — interval,"285,8–1.638,6 (medie 698)",pg/mL,114 probe,[4]
+"Osteomalacie indusă de tumoră (NIH, n = 31)",FGF23 intact — mediana (interval),"546,4 (76–2.742)",pg/mL,referință laborator 10–50 pg/mL,[5]
+"Osteomalacie indusă de tumoră (NIH, n = 31)",Fosfor seric — mediana,"1,69","mg/dL (≈ 0,55 mmol/L)","referință 2,5–4,8 mg/dL",[5]
+Osteomalacie indusă de tumoră (recenzie sistematică),Hipofosfatemie / FGF23 crescut la diagnostic,"99,8% / 95,5%",din pacienți,serii de cazuri publicate,[14]
+Hipofosfatemie legată de cromozomul X — adulți (criterii studiu clinic),FGF23 intact,> 30,pg/mL,test Kainos,[6]
+Hipofosfatemie legată de cromozomul X — adulți (criterii studiu clinic),Fosfor seric și reabsorbția tubulară maximă,"< 2,5 / < 2,5",mg/dL,pe nemâncate,[6]
+Hipofosfatemie legată de cromozomul X — copii (n = 20),FGF23 intact — medie ± deviație standard,"182,6 ± 67,3",pg/mL,"valori inițiale, înainte de tratament",[7]
+Hipofosfatemie legată de cromozomul X — copii (n = 20),Reabsorbția tubulară maximă a fosfatului,"2,3 ± 0,5",mg/dL,valori inițiale,[7]
+Hipofosfatemie legată de cromozomul X — copii (n = 20),"1,25-dihidroxivitamina D","29,3 ± 17,3",pg/mL,valori inițiale,[7]
+"Anemie feriprivă tratată cu carboximaltoză ferică (studiu randomizat, n = 1.000)","Hipofosfatemie sub 2,0 mg/dL","50,8%",din pacienți,"față de 0,9% cu ferumoxitol; hipofosfatemie sub 1,3 mg/dL la 10,0%",[25]
+Aceeași sursă,Hipofosfatemie persistentă la 5 săptămâni,"29,1%",din pacienți,niciun pacient tratat cu ferumoxitol,[25]
+Aceeași sursă,Creșterea FGF23 biologic activ,"+302,8 ± 326,2%","față de valoarea inițială, la 2 săptămâni","ferumoxitol: +10,1 ± 61,0%",[25]
+Rahitism hipofosfatemic autozomal dominant,Fier seric scăzut ↔ FGF23 C-terminal crescut,corelație negativă,—,observată și la martori sănătoși; FGF23 intact crește numai la purtătorii mutației,"[21, 27]"
+Mecanism general,"Deficitul de fier, inflamația și eritropoieza",cresc simultan producția și clivarea,—,"de aceea hormonul biologic activ se modifică puțin, dar testul C-terminal crește mult","[22, 28]"
+"Boală cronică renală (biopsii, n = 236)",Expresia renală α-Klotho,scade odată cu stadiul,—,asociată cu creșterea FGF23 seric,[15]
