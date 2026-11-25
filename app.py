@@ -6,6 +6,7 @@ import streamlit as st
 
 import data_import as di
 import physiology as ph
+import public_interactiv as pi
 from literature import BIBLIOGRAPHY, CRIC_FGF23, REFERENCE, DEFAULT_ANCHORS, cite
 from organ_schemes import SCHEMES, diagram
 
@@ -560,37 +561,235 @@ with tabs[6]:
 
 # ---------------------------------------------------------------- 7. Cu publicul
 with tabs[7]:
-    st.subheader('🎤 Chestionar pentru public')
-    st.write('18 întrebări cu dificultate progresivă. Ultimele trei acoperă sistemul sânge și fier, adăugat în versiunea 10.')
-    for i, (nivel, intrebare, optiuni, corect, explicatie) in enumerate(QUESTIONS):
-        st.markdown(f'**{i + 1}. {intrebare}**')
-        st.caption(nivel)
-        selectat = st.radio('Răspuns', optiuni, index=None, key=f'quiz_v10_answer_{i}',
-                            label_visibility='collapsed')
-        if st.button('Verifică și explică', key=f'quiz_v10_check_{i}'):
-            if selectat is None:
-                st.warning('Selectează mai întâi un răspuns.')
-            elif optiuni.index(selectat) == corect:
-                st.success('Corect!')
+    st.subheader('🎤 Cu publicul')
+    st.write('Patru moduri interactive în care răspunsul este **calculat din model în momentul '
+             'prezentării**, nu scris dinainte — plus chestionarul clasic. Publicul poate cere orice '
+             'variantă, inclusiv una la care nu v-ați gândit.')
+
+    m_duel, m_panel, m_tinta, m_test, m_quiz = st.tabs(
+        ['⚔️ Sala contra model', '🔍 Diagnostic ascuns', '🎯 Provocare', '📝 Test înainte/după',
+         '📋 Cele 18 întrebări'])
+
+    # ---------------------------------------------------------------- duel
+    with m_duel:
+        st.markdown('#### Sala prezice, modelul dezvăluie')
+        st.caption('Citiți întrebarea, numărați mâinile ridicate pentru fiecare variantă, apoi '
+                   'apăsați „Dezvăluie”. Modelul calculează răspunsul pe loc.')
+
+        etichete = {d['id']: f"{d['titlu']} — {d['cine']}" for d in pi.DUELURI}
+        ales = st.selectbox('Duelul', list(etichete), format_func=lambda k: etichete[k],
+                            key='duel_ales')
+        d = pi.duel(ales)
+
+        st.info(f"**{d['titlu']}**  \n{d['intrebare']}")
+        st.caption('Scenariul de pornire: ' + d['scenariu'])
+
+        v1, v2, v3, v4 = st.columns([1, 1, 1, 1.4])
+        voturi = {
+            'crește': v1.number_input('Mâini: crește', 0, 500, 0, 1, key=f'v_crestere_{ales}'),
+            'scade': v2.number_input('Mâini: scade', 0, 500, 0, 1, key=f'v_scadere_{ales}'),
+            'rămâne': v3.number_input('Mâini: rămâne', 0, 500, 0, 1, key=f'v_ramane_{ales}'),
+        }
+        dezvaluie = v4.button('🔓 Dezvăluie răspunsul', type='primary', key=f'dezv_{ales}')
+
+        if dezvaluie:
+            r = d['rezultat']
+            z = r['zecimale']
+            st.markdown('##### Ce calculează modelul')
+            c1, c2, c3 = st.columns(3)
+            c1.metric('Înainte', f"{r['inainte']:.{z}f} {r['unitate']}")
+            c2.metric('După', f"{r['dupa']:.{z}f} {r['unitate']}",
+                      f"{r['relativ'] * 100:+.1f}%")
+            c3.metric('Direcția', r['directie'].upper())
+            st.caption('Markerul urmărit: ' + r['nume'])
+
+            procent = pi.scor_sala(voturi, r['directie'])
+            if procent is None:
+                st.warning('Nu ați introdus voturile, deci nu pot calcula scorul sălii. '
+                           'Răspunsul modelului este mai sus.')
             else:
-                st.error('Răspunsul corect: ' + optiuni[corect])
-            if selectat is not None:
-                st.info(explicatie)
+                total = sum(voturi.values())
+                if procent >= 60:
+                    st.success(f'Sala a nimerit: {procent:.0f} la sută din {total} voturi.')
+                elif procent >= 30:
+                    st.warning(f'Sala s-a împărțit: {procent:.0f} la sută au nimerit, din {total} voturi.')
+                else:
+                    st.error(f'Sala a greșit: doar {procent:.0f} la sută au nimerit, din {total} voturi. '
+                             'Acesta este cel mai bun moment didactic — explicați acum.')
+                istoric = st.session_state.setdefault('duel_istoric', [])
+                istoric.append({'duel': d['titlu'], 'direcția reală': r['directie'],
+                                'sala a nimerit (%)': round(procent, 1), 'voturi': total})
+
+            st.info('**Lecția:** ' + d['lectia'])
+            if d.get('nota_model'):
+                st.warning('**Limita modelului, de declarat:** ' + d['nota_model'])
+
+        istoric = st.session_state.get('duel_istoric', [])
+        if istoric:
+            with st.expander(f'📊 Scorul sălii pe toată prezentarea ({len(istoric)} runde)'):
+                tabel = pd.DataFrame(istoric)
+                st.dataframe(tabel, hide_index=True, use_container_width=True)
+                medie = tabel['sala a nimerit (%)'].mean()
+                st.metric('Media de acuratețe a sălii', f'{medie:.0f} %')
+                st.caption('Această medie este un rezultat măsurat: se poate pune în lucrarea scrisă '
+                           'ca indicator de înțelegere a publicului.')
+                if st.button('🔄 Golește scorul', key='goleste_istoric'):
+                    st.session_state['duel_istoric'] = []
+                    st.rerun()
+
         st.divider()
-    if st.button('🏆 Calculează scorul', type='primary'):
-        scor = sum(st.session_state.get(f'quiz_v10_answer_{i}') == o[corect]
-                   for i, (_, _, o, corect, _) in enumerate(QUESTIONS))
-        st.metric('Scor', f'{scor}/{len(QUESTIONS)}')
-        if scor <= len(QUESTIONS) * 0.4:
-            st.info('Recapitulează rolul FGF23, al α-Klotho și al transportorilor de fosfat.')
-        elif scor <= len(QUESTIONS) * 0.7:
-            st.info('Bază bună; aprofundează diferențele dintre bolile cu exces de FGF23.')
+        with st.expander('⚡ Duel improvizat: o întrebare venită din sală'):
+            st.caption('Dacă cineva întreabă „ce-ar fi dacă...”, construiți duelul aici, pe loc.')
+            i1, i2 = st.columns(2)
+            scen_i = i1.selectbox('Pornim de la', list(ph.SCENARII), key='liber_scenariu')
+            marker_i = i2.selectbox('Urmărim', list(pi.MARKERI),
+                                    format_func=lambda k: pi.MARKERI[k][0], key='liber_marker')
+            p1, p2 = st.columns(2)
+            param_i = p1.selectbox('Schimbăm', list(pi.PARAMETRI_UI),
+                                   format_func=lambda k: pi.PARAMETRI_UI[k][0], key='liber_param')
+            eticheta, pmin, pmax, pas = pi.PARAMETRI_UI[param_i]
+            implicit = ph.SCENARII[scen_i].get(param_i)
+            if implicit is None:
+                implicit = getattr(ph.Parametri(), param_i, pmin) or pmin
+            valoare_i = p2.number_input('Valoarea nouă', pmin, pmax, float(implicit), pas,
+                                        key='liber_valoare')
+            if st.button('🔓 Calculează', key='liber_calc'):
+                rl = pi.duel_liber(scen_i, {param_i: float(valoare_i)}, marker_i)
+                zl = rl['zecimale']
+                l1, l2, l3 = st.columns(3)
+                l1.metric('Înainte', f"{rl['inainte']:.{zl}f} {rl['unitate']}")
+                l2.metric('După', f"{rl['dupa']:.{zl}f} {rl['unitate']}",
+                          f"{rl['relativ'] * 100:+.1f}%")
+                l3.metric('Direcția', rl['directie'].upper())
+                st.caption('Un diapozitiv nu poate răspunde la această întrebare. Laboratorul poate.')
+
+    # ---------------------------------------------------------------- panel orb
+    with m_panel:
+        st.markdown('#### Ghiciți diagnosticul din panelul de laborator')
+        st.caption('Afișați numai analizele. Publicul votează, apoi dezvăluiți. Valorile sunt '
+                   'calculate din model, deci sunt coerente între ele — nu sunt inventate.')
+
+        caz = st.selectbox('Cazul de afișat (nu îl citiți cu voce tare)', list(ph.SCENARII),
+                           key='panel_caz')
+        p = pi.panel_orb(caz)
+        st.dataframe(pd.DataFrame(p['panel']), hide_index=True, use_container_width=True)
+
+        variante = pi.variante_diagnostic(caz, 4, ordine=[1, 4, 6])
+        st.radio('Variantele pe care le citiți sălii', variante, index=None, key='panel_vot',
+                 label_visibility='visible')
+        if st.button('🔓 Dezvăluie diagnosticul', type='primary', key='panel_dezv'):
+            st.success('Răspunsul: ' + p['raspuns'])
+            st.info('**Lecția:** ' + p['lectia'])
+            ales_sala = st.session_state.get('panel_vot')
+            if ales_sala == p['raspuns']:
+                st.balloons()
+            elif ales_sala is not None:
+                st.caption('Sala a votat „' + ales_sala + '”. Explicați ce indiciu din panel '
+                           'deosebește cele două variante.')
+
+    # ---------------------------------------------------------------- tinta
+    with m_tinta:
+        st.markdown('#### Provocare: atingeți o stare fiziologică')
+        st.caption('Citiți cerința, apoi lăsați sala să vă spună ce cursor să mișcați din bara '
+                   'laterală. Verificarea se face pe starea de echilibru, deci nu se poate trișa.')
+
+        et_tinte = {t['id']: t['titlu'] for t in pi.TINTE}
+        t_ales = st.selectbox('Provocarea', list(et_tinte), format_func=lambda k: et_tinte[k],
+                              key='tinta_aleasa')
+        rez = pi.verifica_tinta(t_ales, PARAMETRI)
+        tinta = rez['tinta']
+
+        st.info('**Cerința:** ' + tinta['cerinta'])
+
+        s = rez['stare']
+        q1, q2, q3 = st.columns(3)
+        q1.metric('Fosfat seric', f"{s['fosfat_mg_dL']:.2f} mg/dL")
+        q2.metric('Pragul de reabsorbție', f"{s['TmP_GFR_mmol_L']:.2f} mmol/L")
+        q3.metric('Fracția de excreție', f"{s['FEPO4_%']:.1f} %")
+        q4, q5 = st.columns(2)
+        q4.metric('FGF23 intact', f"{s['FGF23_intact_pg_mL']:.0f} pg/mL")
+        q5.metric('FGF23 C-terminal', f"{s['FGF23_C_terminal_RU_mL']:.0f} RU/mL")
+
+        if rez['atins']:
+            st.success('🎯 Ținta este atinsă cu parametrii din bara laterală.')
+            st.info('**Lecția:** ' + tinta['lectia'])
         else:
-            st.success('Foarte bine! Ai integrat mecanisme moleculare, clinică și raționament de cercetare.')
-    if st.button('🔄 Resetează răspunsurile'):
-        for i in range(len(QUESTIONS)):
-            st.session_state.pop(f'quiz_v10_answer_{i}', None)
-        st.rerun()
+            st.warning('Încă nu. Mișcați cursoarele din bara laterală și valorile de sus se '
+                       'actualizează singure.')
+            with st.expander('💡 Indiciu'):
+                st.write(tinta['indiciu'])
+            with st.expander('🔑 Soluția (deschideți doar dacă sala se blochează)'):
+                st.write(tinta['soluitie'])
+
+    # ---------------------------------------------------------------- test pre/post
+    with m_test:
+        st.markdown('#### Testul înainte și după')
+        st.caption('Aceleași cinci întrebări la începutul și la sfârșitul prezentării. Diferența de '
+                   'scor este un rezultat măsurat, pe care îl puteți raporta în lucrare.')
+
+        faza = st.radio('Faza', ['înainte', 'după'], horizontal=True, key='test_faza')
+        raspunsuri = []
+        for i, (intrebare, optiuni, _) in enumerate(pi.TEST_PRE_POST):
+            st.markdown(f'**{i + 1}. {intrebare}**')
+            sel = st.radio('Răspuns', optiuni, index=None, key=f'test_{faza}_{i}',
+                           label_visibility='collapsed')
+            raspunsuri.append(optiuni.index(sel) if sel is not None else None)
+            st.divider()
+
+        if st.button(f'📊 Înregistrează scorul „{faza}”', type='primary', key=f'test_calc_{faza}'):
+            scor = pi.scor_test(raspunsuri)
+            st.session_state[f'test_scor_{faza}'] = scor
+            st.metric(f'Scor {faza}', f'{scor}/{len(pi.TEST_PRE_POST)}')
+
+        s_inainte = st.session_state.get('test_scor_înainte')
+        s_dupa = st.session_state.get('test_scor_după')
+        if s_inainte is not None and s_dupa is not None:
+            st.divider()
+            d1, d2, d3 = st.columns(3)
+            d1.metric('Înainte', f'{s_inainte}/{len(pi.TEST_PRE_POST)}')
+            d2.metric('După', f'{s_dupa}/{len(pi.TEST_PRE_POST)}')
+            d3.metric('Diferența', f'{s_dupa - s_inainte:+d}')
+            if s_dupa > s_inainte:
+                st.success('Prezentarea a produs o creștere măsurabilă de înțelegere. '
+                           'Raportați diferența, numărul de participanți și cele cinci întrebări.')
+            elif s_dupa == s_inainte:
+                st.info('Scor neschimbat. Raportați-l onest: un rezultat nul este tot un rezultat.')
+            else:
+                st.warning('Scor în scădere. Verificați dacă publicul a fost același la ambele runde.')
+
+    # ---------------------------------------------------------------- chestionarul clasic
+    with m_quiz:
+        st.write('18 întrebări cu dificultate progresivă. Ultimele trei acoperă sistemul sânge și '
+                 'fier, adăugat în versiunea 10.')
+        for i, (nivel, intrebare, optiuni, corect, explicatie) in enumerate(QUESTIONS):
+            st.markdown(f'**{i + 1}. {intrebare}**')
+            st.caption(nivel)
+            selectat = st.radio('Răspuns', optiuni, index=None, key=f'quiz_v10_answer_{i}',
+                                label_visibility='collapsed')
+            if st.button('Verifică și explică', key=f'quiz_v10_check_{i}'):
+                if selectat is None:
+                    st.warning('Selectează mai întâi un răspuns.')
+                elif optiuni.index(selectat) == corect:
+                    st.success('Corect!')
+                else:
+                    st.error('Răspunsul corect: ' + optiuni[corect])
+                if selectat is not None:
+                    st.info(explicatie)
+            st.divider()
+        if st.button('🏆 Calculează scorul', type='primary'):
+            scor = sum(st.session_state.get(f'quiz_v10_answer_{i}') == o[corect]
+                       for i, (_, _, o, corect, _) in enumerate(QUESTIONS))
+            st.metric('Scor', f'{scor}/{len(QUESTIONS)}')
+            if scor <= len(QUESTIONS) * 0.4:
+                st.info('Recapitulează rolul FGF23, al α-Klotho și al transportorilor de fosfat.')
+            elif scor <= len(QUESTIONS) * 0.7:
+                st.info('Bază bună; aprofundează diferențele dintre bolile cu exces de FGF23.')
+            else:
+                st.success('Foarte bine! Ai integrat mecanisme moleculare, clinică și raționament de cercetare.')
+        if st.button('🔄 Resetează răspunsurile'):
+            for i in range(len(QUESTIONS)):
+                st.session_state.pop(f'quiz_v10_answer_{i}', None)
+            st.rerun()
 
 # ---------------------------------------------------------------- 8. Metodologie
 with tabs[8]:
